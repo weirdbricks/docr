@@ -37,7 +37,7 @@ module Docr::Types
     property parent : String?
 
     @[JSON::Field(key: "Comment")]
-    property comment : String
+    property comment : String?
 
     @[JSON::Field(key: "Created")]
     property created : String

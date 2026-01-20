@@ -35,7 +35,7 @@ module Docr::Types
     property ingress : Bool
 
     @[JSON::Field(key: "Containers")]
-    property containers : Hash(String, Docr::Types::NetworkContainer)
+    property containers : Hash(String, Docr::Types::NetworkContainer)?
 
     @[JSON::Field(key: "Options")]
     property options : Hash(String, String)
