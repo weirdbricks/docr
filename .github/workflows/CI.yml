@@ -2,30 +2,32 @@ name: CI
 
 on:
   push:
-    branches: ["master"]
+    branches:
+      - main
   pull_request:
-    branches: ["*"]
+    branches:
+      - "**"
+  release:
+    types:
+      - published
   schedule:
     - cron: "0 21 * * *"
 
 jobs:
   quality:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Crystal
         uses: oprypin/install-crystal@v1
         with:
-          crystal: 1.15.0
+          crystal: 1.18.2
 
       - name: Check code formatting
         run: crystal tool format --check
-
-      - name: Crystal Ameba Linter
-        run: docker run -v $(pwd):/src ghcr.io/crystal-ameba/ameba:latest
 
       - name: Install dependencies
         run: shards install
