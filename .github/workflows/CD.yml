@@ -11,22 +11,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Crystal
         uses: oprypin/install-crystal@v1
         with:
-          crystal: 1.15.0
+          crystal: 1.18.2
 
       - name: Linux dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libyaml-dev
-
-      - name: Update version
-        run: |
-          yq eval -i ".version = \"${{ github.event.release.tag_name }}\"" shard.yml
-          perl -pi -e 's/VERSION = ".*"/VERSION = "${{ github.event.release.tag_name }}"/g' src/docr.cr
 
       - name: Install dependencies
         run: shards install
