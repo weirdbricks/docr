@@ -217,7 +217,12 @@ module Docr::Endpoints
     #
     # Returns an array of image delete response items.
     def delete(name : String, force = false, no_prune = false) : Array(Docr::Types::ImageDeleteResponseItem)
-      @client.call("DELETE", "/images/#{name}") do |response|
+      params = URI::Params{
+        "force"   => [force.to_s],
+        "noprune" => [no_prune.to_s],
+      }
+
+      @client.call("DELETE", "/images/#{name}?#{params}") do |response|
         body = response.body_io.gets_to_end
         return Array(Docr::Types::ImageDeleteResponseItem).from_json(body)
       end
