@@ -7,11 +7,11 @@ module Docr::Types
     @[JSON::Field(key: "Type")]
     property type : String
     @[JSON::Field(key: "Config")]
-    property config : Hash(String, String)
+    property config : Hash(String, String)?
 
     def initialize(
       @type,
-      @config,
+      @config = nil,
     )
     end
   end

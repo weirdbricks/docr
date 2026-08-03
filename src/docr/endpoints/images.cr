@@ -174,13 +174,19 @@ module Docr::Endpoints
     #
     # - name: The name of the image to push.
     # - tag: The tag of the image to push.
-    # - auth: Authentication credentials for pushing the image.
+    # - auth: Base64-encoded X-Registry-Auth JSON credentials for the target registry.
     #
     # Does not return any specific value.
     def push(name : String, tag : String, auth : String)
-      # headers = HTTP::Headers {}
+      params = URI::Params{
+        "tag" => [tag],
+      }
 
-      @client.call("POST", "/images/#{name}/push") do
+      headers = HTTP::Headers{
+        "X-Registry-Auth" => auth,
+      }
+
+      @client.call("POST", "/images/#{name}/push?#{params}", headers) do |response|
         response.consume_body_io
       end
     end
