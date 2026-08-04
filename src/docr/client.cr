@@ -22,9 +22,11 @@ module Docr
     # default.
     DEFAULT_SOCKET_PATH = "/var/run/docker.sock"
 
-    @socket_path : String
+    @socket_path : String?
 
-    # Initializes a new instance of the Docr::Client class.
+    # Initializes a new instance of the Docr::Client class talking to a
+    # local UNIX socket (the common case - a local or rootless Docker/
+    # Podman daemon).
     #
     # - socket_path: path to the Docker daemon's UNIX socket. Defaults to
     #   the DOCKER_HOST environment variable (a unix:// URL, the same
@@ -37,20 +39,39 @@ module Docr
       @socket_path = socket_path || docker_host_socket_path || DEFAULT_SOCKET_PATH
     end
 
+    # Initializes a new instance of the Docr::Client class talking to a
+    # *remote* Docker daemon over TCP, optionally TLS-secured - the
+    # `tls` param is `HTTP::Client`'s own `TLSContext` (`nil` for plain
+    # TCP, `true` for TLS with default verification, or an
+    # `OpenSSL::SSL::Context::Client` for full control over
+    # certs/verification - callers build that context, this class just
+    # passes it straight through to the underlying `HTTP::Client`).
+    def initialize(host : String, port : Int32, tls : HTTP::Client::TLSContext = nil)
+      super(host: host, port: port, tls: tls)
+      @socket_path = nil
+    end
+
     private def docker_host_socket_path : String?
       ENV["DOCKER_HOST"]?.try(&.sub(/^unix:\/\//, ""))
     end
 
     # Lazily (re)connect over a UNIX socket instead of HTTP::Client's own
     # TCP/TLS logic - otherwise identical to how HTTP::Client#io works.
+    # When constructed for a remote TCP(+TLS) daemon instead (no
+    # @socket_path set), defers to HTTP::Client's own #io unchanged via
+    # `super` - that's already exactly the TCP/TLS connection logic
+    # needed here.
     private def io
+      socket_path = @socket_path
+      return super unless socket_path
+
       cached = @io
       return cached if cached
       unless @reconnect
         raise "This HTTP::Client cannot be reconnected"
       end
 
-      socket = UNIXSocket.new(@socket_path)
+      socket = UNIXSocket.new(socket_path)
       socket.read_timeout = @read_timeout if @read_timeout
       socket.write_timeout = @write_timeout if @write_timeout
       socket.sync = false
