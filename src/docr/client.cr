@@ -23,6 +23,7 @@ module Docr
     DEFAULT_SOCKET_PATH = "/var/run/docker.sock"
 
     @socket_path : String?
+    @tls_hostname : String?
 
     # Initializes a new instance of the Docr::Client class talking to a
     # local UNIX socket (the common case - a local or rootless Docker/
@@ -46,9 +47,18 @@ module Docr
     # `OpenSSL::SSL::Context::Client` for full control over
     # certs/verification - callers build that context, this class just
     # passes it straight through to the underlying `HTTP::Client`).
-    def initialize(host : String, port : Int32, tls : HTTP::Client::TLSContext = nil)
+    #
+    # - tls_hostname: overrides which hostname the TLS handshake
+    #   verifies the server's certificate against, independent of *host*
+    #   (which is still what's actually connected to) - the common
+    #   docker-machine-style setup of reaching a daemon via a raw IP
+    #   while its certificate was issued for a fixed name like
+    #   "localhost". `nil` (the default) verifies against *host* itself,
+    #   matching plain `HTTP::Client`'s own behavior.
+    def initialize(host : String, port : Int32, tls : HTTP::Client::TLSContext = nil, tls_hostname : String? = nil)
       super(host: host, port: port, tls: tls)
       @socket_path = nil
+      @tls_hostname = tls_hostname
     end
 
     private def docker_host_socket_path : String?
@@ -59,12 +69,21 @@ module Docr
     # TCP/TLS logic - otherwise identical to how HTTP::Client#io works.
     # When constructed for a remote TCP(+TLS) daemon instead (no
     # @socket_path set), defers to HTTP::Client's own #io unchanged via
-    # `super` - that's already exactly the TCP/TLS connection logic
-    # needed here.
+    # `super` UNLESS @tls_hostname overrides the verification hostname
+    # (HTTP::Client's own #io always verifies against @host, with no way
+    # to override just that - see #io_with_tls_hostname_override below
+    # for the one case this reimplements instead of delegating).
     private def io
-      socket_path = @socket_path
-      return super unless socket_path
+      if socket_path = @socket_path
+        return io_unix(socket_path)
+      end
 
+      return super unless @tls_hostname
+
+      io_with_tls_hostname_override
+    end
+
+    private def io_unix(socket_path : String)
       cached = @io
       return cached if cached
       unless @reconnect
@@ -75,6 +94,37 @@ module Docr
       socket.read_timeout = @read_timeout if @read_timeout
       socket.write_timeout = @write_timeout if @write_timeout
       socket.sync = false
+
+      @io = socket
+    end
+
+    # Identical to HTTP::Client's own private #io, except the TLS
+    # handshake verifies the server's certificate against @tls_hostname
+    # instead of unconditionally using @host - the one thing plain
+    # `HTTP::Client` has no hook for at all, hence reimplementing this
+    # rather than delegating via `super`.
+    private def io_with_tls_hostname_override
+      cached = @io
+      return cached if cached
+      unless @reconnect
+        raise "This HTTP::Client cannot be reconnected"
+      end
+
+      hostname = @host.starts_with?('[') && @host.ends_with?(']') ? @host[1..-2] : @host
+      socket = TCPSocket.new(hostname, @port, @dns_timeout, @connect_timeout)
+      socket.read_timeout = @read_timeout if @read_timeout
+      socket.write_timeout = @write_timeout if @write_timeout
+      socket.sync = false
+
+      if tls = @tls
+        tcp_socket = socket
+        begin
+          socket = OpenSSL::SSL::Socket::Client.new(tcp_socket, context: tls, sync_close: true, hostname: @tls_hostname)
+        rescue exc
+          tcp_socket.close
+          raise exc
+        end
+      end
 
       @io = socket
     end
