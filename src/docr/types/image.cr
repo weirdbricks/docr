@@ -72,8 +72,11 @@ module Docr::Types
     @[JSON::Field(key: "VirtualSize")]
     property virtual_size : Int64?
 
+    # Same nullability gap as ContainerInspectResponse#graph_driver -
+    # newer Docker Engine (found live on 29.1.3, API 1.52) omits
+    # GraphDriver from image inspect responses too.
     @[JSON::Field(key: "GraphDriver")]
-    property graph_driver : Docr::Types::GraphDriverData
+    property graph_driver : Docr::Types::GraphDriverData?
 
     @[JSON::Field(key: "RootFS")]
     property root_fs : Docr::Types::RootFS
