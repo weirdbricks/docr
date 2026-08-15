@@ -61,8 +61,12 @@ module Docr::Types
     @[JSON::Field(key: "HostConfig")]
     property host_config : Docr::Types::HostConfig
 
+    # Newer Docker Engine (found live on 29.1.3, API 1.52) omits
+    # GraphDriver from inspect responses entirely - previously a
+    # non-nullable field crashed JSON parsing outright on any inspect()
+    # call against such a daemon, not just a wrong comparison result.
     @[JSON::Field(key: "GraphDriver")]
-    property graph_driver : Docr::Types::GraphDriverData
+    property graph_driver : Docr::Types::GraphDriverData?
 
     @[JSON::Field(key: "SizeRw")]
     property size_rw : Int64?
