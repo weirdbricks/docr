@@ -87,6 +87,36 @@ module Docr::Types
     @[JSON::Field(key: "OomScoreAdj")]
     property oom_score_adj : Int64?
 
+    @[JSON::Field(key: "OomKillDisable")]
+    property oom_kill_disable : Bool?
+
+    @[JSON::Field(key: "Memory")]
+    property memory : Int64?
+
+    @[JSON::Field(key: "MemoryReservation")]
+    property memory_reservation : Int64?
+
+    @[JSON::Field(key: "MemorySwap")]
+    property memory_swap : Int64?
+
+    @[JSON::Field(key: "MemorySwappiness")]
+    property memory_swappiness : Int64?
+
+    @[JSON::Field(key: "NanoCpus")]
+    property nano_cpus : Int64?
+
+    @[JSON::Field(key: "CpuShares")]
+    property cpu_shares : Int64?
+
+    @[JSON::Field(key: "CpusetCpus")]
+    property cpuset_cpus : String?
+
+    @[JSON::Field(key: "CpusetMems")]
+    property cpuset_mems : String?
+
+    @[JSON::Field(key: "PidsLimit")]
+    property pids_limit : Int64?
+
     @[JSON::Field(key: "PidMode")]
     property pid_mode : String?
 
@@ -155,6 +185,16 @@ module Docr::Types
       @cgroup = nil,
       @links = nil,
       @oom_score_adj = nil,
+      @oom_kill_disable = nil,
+      @memory = nil,
+      @memory_reservation = nil,
+      @memory_swap = nil,
+      @memory_swappiness = nil,
+      @nano_cpus = nil,
+      @cpu_shares = nil,
+      @cpuset_cpus = nil,
+      @cpuset_mems = nil,
+      @pids_limit = nil,
       @pid_mode = nil,
       @privileged = nil,
       @publish_all_ports = nil,
